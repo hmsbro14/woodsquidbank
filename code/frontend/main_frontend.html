@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WoodSquid Bank - ATM Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #e6f2ff; padding: 40px; text-align: center; }
+    input, button { padding: 10px; margin: 10px; width: 250px; }
+    #output { margin-top: 20px; font-weight: bold; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>🦑 WoodSquid Bank</h1>
+
+  <div id="login-section">
+    <input type="text" id="card" placeholder="Card Number"><br>
+    <input type="text" id="exp" placeholder="MM/YY"><br>
+    <input type="text" id="cvv" placeholder="CVV"><br>
+    <input type="password" id="pin" placeholder="PIN"><br>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="atm-section" class="hidden">
+    <p id="welcome"></p>
+    <p>Balance: $<span id="balance"></span></p>
+    <input type="number" id="depositAmount" placeholder="Amount to deposit"><br>
+    <button onclick="deposit()">Deposit</button>
+  </div>
+
+  <p id="output"></p>
+
+  <script>
+    let currentCard = "";
+
+    function login() {
+      const data = {
+        card_number: document.getElementById("card").value,
+        exp: document.getElementById("exp").value,
+        cvv: document.getElementById("cvv").value,
+        pin: document.getElementById("pin").value
+      };
+
+      fetch("http://127.0.0.1:8000/atm/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Login failed");
+        return res.json();
+      })
+      .then(result => {
+        document.getElementById("welcome").textContent = result.message;
+        document.getElementById("balance").textContent = result.balance.toFixed(2);
+        document.getElementById("login-section").classList.add("hidden");
+        document.getElementById("atm-section").classList.remove("hidden");
+        currentCard = data.card_number;
+        document.getElementById("output").textContent = "";
+      })
+      .catch(err => {
+        document.getElementById("output").textContent = "Login failed: " + err.message;
+      });
+    }
+
+    function deposit() {
+      const data = {
+        card_number: currentCard,
+        amount: parseFloat(document.getElementById("depositAmount").value)
+      };
+
+      fetch("http://127.0.0.1:8000/atm/deposit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Deposit failed");
+        return res.json();
+      })
+      .then(result => {
+        document.getElementById("balance").textContent = result.message.match(/\$([0-9.]+)/)[1];
+        document.getElementById("output").textContent = result.message;
+      })
+      .catch(err => {
+        document.getElementById("output").textContent = "Deposit failed: " + err.message;
+      });
+    }
+  </script>
+</body>
+</html>
